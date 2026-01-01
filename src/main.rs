@@ -59,7 +59,7 @@ fn get_tools() -> Value {
                     },
                     "region": {
                         "type": "object",
-                        "description": "Optional region to capture (coordinates relative to the selected screen). If not provided, captures entire screen.",
+                        "description": "Optional region to capture in logical pixels (same coordinate system as get_screen_info). If not provided, captures entire screen.",
                         "properties": {
                             "x": { "type": "integer", "description": "X coordinate of top-left corner" },
                             "y": { "type": "integer", "description": "Y coordinate of top-left corner" },
@@ -216,6 +216,11 @@ fn capture_screenshot(
     let screen = screens.get(idx).ok_or_else(|| {
         format!("Screen index {} not found. Available screens: 0-{}", idx, screens.len().saturating_sub(1))
     })?;
+    
+    // Get scale factor for coordinate conversion (logical -> physical pixels)
+    // This ensures region coordinates match what get_screen_info reports
+    let scale_factor = screen.display_info.scale_factor as f64;
+    
     let capture = screen
         .capture()
         .map_err(|e| format!("Failed to capture: {:?}", e))?;
@@ -227,8 +232,13 @@ fn capture_screenshot(
     );
 
     // Crop if region specified
+    // Convert logical coordinates (as reported by get_screen_info) to physical pixels
     let img = if let Some((x, y, w, h)) = region {
-        img.crop_imm(x as u32, y as u32, w, h)
+        let physical_x = (x as f64 * scale_factor) as u32;
+        let physical_y = (y as f64 * scale_factor) as u32;
+        let physical_w = (w as f64 * scale_factor) as u32;
+        let physical_h = (h as f64 * scale_factor) as u32;
+        img.crop_imm(physical_x, physical_y, physical_w, physical_h)
     } else {
         img
     };
