@@ -203,6 +203,25 @@ fn get_tools() -> Value {
                 "type": "object",
                 "properties": {}
             }
+        },
+        {
+            "name": "mouse_scroll",
+            "description": "Scroll the mouse wheel. Positive delta_y scrolls up, negative scrolls down. Positive delta_x scrolls right, negative scrolls left.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "delta_x": {
+                        "type": "integer",
+                        "description": "Horizontal scroll amount (positive = right, negative = left)",
+                        "default": 0
+                    },
+                    "delta_y": {
+                        "type": "integer",
+                        "description": "Vertical scroll amount (positive = up, negative = down)",
+                        "default": 0
+                    }
+                }
+            }
         }
     ])
 }
@@ -791,6 +810,23 @@ fn execute_tool(name: &str, args: &Value) -> Result<Value, String> {
         "get_screen_info" => get_screen_info(),
 
         "get_mouse_position" => get_mouse_position(),
+
+        "mouse_scroll" => {
+            let delta_x = args.get("delta_x").and_then(|v| v.as_i64()).unwrap_or(0);
+            let delta_y = args.get("delta_y").and_then(|v| v.as_i64()).unwrap_or(0);
+
+            simulate(&EventType::Wheel {
+                delta_x,
+                delta_y,
+            })
+            .map_err(|e| format!("Scroll failed: {:?}", e))?;
+
+            Ok(json!({
+                "success": true,
+                "delta_x": delta_x,
+                "delta_y": delta_y
+            }))
+        }
 
         _ => Err(format!("Unknown tool: {}", name)),
     }
