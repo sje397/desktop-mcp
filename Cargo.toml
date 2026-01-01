@@ -1,0 +1,30 @@
+[package]
+name = "desktop-mcp"
+version = "0.1.0"
+edition = "2021"
+description = "MCP server for desktop automation - screenshots, mouse, and keyboard control"
+license = "MIT"
+repository = "https://github.com/scottjellis/desktop-mcp"
+keywords = ["mcp", "automation", "desktop", "screenshots"]
+categories = ["development-tools", "gui"]
+
+[dependencies]
+# JSON-RPC / MCP protocol
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Screenshot capture
+screenshots = "0.8"
+image = "0.25"
+base64 = "0.22"
+
+# Input simulation
+rdev = "0.5"
+
+# macOS-specific for drag events
+[target.'cfg(target_os = "macos")'.dependencies]
+core-graphics = "0.24"
+
+[profile.release]
+opt-level = 3
+lto = true
