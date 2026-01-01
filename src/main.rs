@@ -195,6 +195,14 @@ fn get_tools() -> Value {
                 "type": "object",
                 "properties": {}
             }
+        },
+        {
+            "name": "get_mouse_position",
+            "description": "Get the current mouse cursor position",
+            "inputSchema": {
+                "type": "object",
+                "properties": {}
+            }
         }
     ])
 }
@@ -289,6 +297,30 @@ fn get_screen_info() -> Result<Value, String> {
         "screens": screen_info,
         "count": screens.len()
     }))
+}
+
+#[cfg(target_os = "macos")]
+fn get_mouse_position() -> Result<Value, String> {
+    use core_graphics::event::CGEvent;
+    use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
+
+    let source = CGEventSource::new(CGEventSourceStateID::HIDSystemState)
+        .map_err(|_| "Failed to create event source")?;
+    
+    let event = CGEvent::new(source)
+        .map_err(|_| "Failed to create event")?;
+    
+    let point = event.location();
+    
+    Ok(json!({
+        "x": point.x,
+        "y": point.y
+    }))
+}
+
+#[cfg(not(target_os = "macos"))]
+fn get_mouse_position() -> Result<Value, String> {
+    Err("get_mouse_position is only supported on macOS".to_string())
 }
 
 // ============================================================================
@@ -757,6 +789,8 @@ fn execute_tool(name: &str, args: &Value) -> Result<Value, String> {
         }
 
         "get_screen_info" => get_screen_info(),
+
+        "get_mouse_position" => get_mouse_position(),
 
         _ => Err(format!("Unknown tool: {}", name)),
     }
